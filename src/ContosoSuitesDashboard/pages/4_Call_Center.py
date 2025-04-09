@@ -53,15 +53,15 @@ def create_transcription_request(audio_file, speech_recognition_language="en-US"
         nonlocal done
         done= True
 
-    # TODO: Subscribe to the events fired by the conversation transcriber
-    transcriber.transcribing.connect(handle_final_result)
+    # Subscribe to the events fired by the conversation transcriber
+    transcriber.transcribed.connect(handle_final_result)
     transcriber.session_started.connect(lambda evt: print(f'SESSION STARTED: {evt}'))
-    transcriber.session_stopped.connect(lambda evt: print(f'SESSION STOPPED: {evt}'))
-    transcriber.canceled.connect(lambda evt: print(f'CONVERSATION CANCELED: {evt}'))
-
-    # TODO: stop continuous transcription on either session stopped or canceled events
+    transcriber.session_stopped.connect(lambda evt: print(f'SESSION STOPPED {evt}'))
+    transcriber.canceled.connect(lambda evt: print(f'CANCELED {evt}'))
+    # stop continuous transcription on either session stopped or canceled events
     transcriber.session_stopped.connect(stop_cb)
     transcriber.canceled.connect(stop_cb)
+
     transcriber.start_transcribing_async()
 
     # Read the whole wave files at once and stream it to sdk
@@ -69,8 +69,8 @@ def create_transcription_request(audio_file, speech_recognition_language="en-US"
     stream.write(wav_data.tobytes())
     stream.close()
     while not done:
-        time.sleep(0.5)
-    
+        time.sleep(.5)
+
     transcriber.stop_transcribing_async()
 
     # all_results = ['This is a test.', 'Fill in with real transcription.']
@@ -519,6 +519,7 @@ def perform_sentiment_analysis_and_opinion_mining():
     """Analyze the sentiment of a call transcript and mine opinions."""
 
     # Set call_contents to file_transcription_results.
+    
     # If it is empty, write out an error message for the user.
     if 'file_transcription_results' in st.session_state:
         # Use st.spinner() to wrap the sentiment analysis process.
