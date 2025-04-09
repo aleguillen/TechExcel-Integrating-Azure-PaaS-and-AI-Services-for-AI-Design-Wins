@@ -38,6 +38,8 @@ def main():
     ## Select a Hotel
     """
     )
+    print("API Integration via Semantic Kernel")
+    print(get_hotels())
 
     # Display the list of hotels as a drop-down list
     hotels_json = get_hotels().json()
