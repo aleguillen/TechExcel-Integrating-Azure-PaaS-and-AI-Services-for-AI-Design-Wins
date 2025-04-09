@@ -20,13 +20,11 @@ public class DatabaseService(string connectionString) : IDatabaseService
             connectionString: connectionString!
         );
         conn.Open();
-        Console.WriteLine($"Connection to {conn.DataSource} established.");
         using var cmd = new SqlCommand(sql, conn);
         using var reader = await cmd.ExecuteReaderAsync();
         var hotels = new List<Hotel>();
         while (await reader.ReadAsync())
         {
-            Console.WriteLine($"Add hotel {reader.GetString(1)} to list.");
             hotels.Add(new Hotel
             {
                 HotelID = reader.GetInt32(0),
