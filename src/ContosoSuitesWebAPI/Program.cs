@@ -63,21 +63,50 @@ builder.Services.AddSingleton<Kernel>((_) =>
         endpoint: builder.Configuration["AzureOpenAI:Endpoint"]!,
         apiKey: builder.Configuration["AzureOpenAI:ApiKey"]!
     );
+    
     var databaseService = _.GetRequiredService<IDatabaseService>();
     kernelBuilder.Plugins.AddFromObject(databaseService);
+
+#pragma warning disable SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+    kernelBuilder.AddAzureOpenAITextEmbeddingGeneration(
+        deploymentName: builder.Configuration["AzureOpenAI:EmbeddingDeploymentName"]!,
+        endpoint: builder.Configuration["AzureOpenAI:Endpoint"]!,
+        apiKey: builder.Configuration["AzureOpenAI:ApiKey"]!
+    );
+#pragma warning restore SKEXP0010 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+    
+    kernelBuilder.Plugins.AddFromType<MaintenanceRequestPlugin>("MaintenanceCopilot");
+    
+    kernelBuilder.Services.AddSingleton<CosmosClient>((_) =>
+    {
+        string userAssignedClientId = builder.Configuration["AZURE_CLIENT_ID"]!;
+        var credential = new DefaultAzureCredential(
+            new DefaultAzureCredentialOptions
+            {
+                ManagedIdentityClientId = userAssignedClientId
+            });
+        CosmosClient client = new(
+            accountEndpoint: builder.Configuration["CosmosDB:AccountEndpoint"]!,
+            tokenCredential: credential
+        );
+        return client;
+    });
+
     return kernelBuilder.Build();
 });
+    
+
 
 
 // Create a single instance of the AzureOpenAIClient to be shared across the application.
-builder.Services.AddSingleton<AzureOpenAIClient>((_) =>
-{
-    var endpoint = new Uri(builder.Configuration["AzureOpenAI:Endpoint"]!);
-    var credentials = new AzureKeyCredential(builder.Configuration["AzureOpenAI:ApiKey"]!);
+// builder.Services.AddSingleton<AzureOpenAIClient>((_) =>
+// {
+//     var endpoint = new Uri(builder.Configuration["AzureOpenAI:Endpoint"]!);
+//     var credentials = new AzureKeyCredential(builder.Configuration["AzureOpenAI:ApiKey"]!);
 
-    var client = new AzureOpenAIClient(endpoint, credentials);
-    return client;
-});
+//     var client = new AzureOpenAIClient(endpoint, credentials);
+//     return client;
+// });
 
 var app = builder.Build();
 
@@ -167,7 +196,9 @@ app.MapPost("/VectorSearch", async ([FromBody] float[] queryVector, [FromService
 app.MapPost("/MaintenanceCopilotChat", async ([FromBody]string message, [FromServices] MaintenanceCopilot copilot) =>
 {
     // Exercise 5 Task 2 TODO #10: Insert code to call the Chat function on the MaintenanceCopilot. Don't forget to remove the NotImplementedException.
-    throw new NotImplementedException();
+    // throw new NotImplementedException();
+    var response = await copilot.Chat(message);
+    return response;
 })
     .WithName("Copilot")
     .WithOpenApi();
